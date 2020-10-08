@@ -13,15 +13,14 @@ configuracao_inicial() {
 
 configuracao_horario() {
 	timedatectl set-timezone America/Sao_Paulo && \
-	systemctl stop ntpd.service ; ntpdate a.ntp.br ; ntpdate b.ntp.br ; systemctl start ntpd.service && \	
-	hwclock --systohc;
+	systemctl stop ntpd.service ; ntpdate a.ntp.br ; ntpdate b.ntp.br ; systemctl start ntpd.service; hwclock --systohc;
 }
 
 configuracao_idioma() {
 	localectl set-locale LANG=pt_br.UTF-8;
 }
 
-configuranca_seguranca() {
+configuracao_seguranca() {
 	sed -i -e "s/.*SELINUX=enforcing.*/SELINUX=disabled/" /etc/sysconfig/selinux && \
 	sed -i -e "s/.*SELINUX=enforcing.*/SELINUX=disabled/" /etc/selinux/config && \
 	systemctl disable firewalld && \
@@ -42,13 +41,16 @@ instalacao_mysql() {
 	systemctl start mysql.service && \
 	cat /var/log/mysqld.log  | grep "temporary password is generated" && \
 	/usr/bin/mysql_secure_installation && \
+	echo "Digite a senha do mysql. " && \
 	mysql -u root -p -e "CREATE FUNCTION fnv1a_64 RETURNS INTEGER SONAME 'libfnv1a_udf.so'" && \
+	echo "Digite a senha do mysql. " && \
 	mysql -u root -p -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'" && \
+	echo "Digite a senha do mysql. " && \
 	mysql -u root -p -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'" && \
 	crudini --set /etc/my.cnf mysqld sql_mode STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION && \
 	crudini --set /etc/my.cnf mysqld max_allowed_packet 64M && \
 	crudini --set /etc/my.cnf mysqld bind-address 0.0.0.0 && \
-	crudini --set /etc/my.cnf mysqld skip-external-locking 1 && \		
+	crudini --set /etc/my.cnf mysqld skip-external-locking 1;  		
 	crudini --set /etc/my.cnf mysqld skip-host-cache 1 && \
 	crudini --set /etc/my.cnf mysqld skip-name-resolve 1 && \
 	crudini --set /etc/my.cnf mysqld performance_schema 1 && \
@@ -63,7 +65,11 @@ instalacao_mysql() {
 	sed -i -e "s/.*quote-names.*/quote-names/" /etc/my.cnf && \
 	systemctl stop mysql.service && \
 	systemctl start mysql.service && \
+	echo "Digite a senha do mysql. " && \
 	mysql -u root -p mysql -e "UPDATE user SET Host = '%' WHERE user.Host  = 'localhost' AND user.User  = 'root' LIMIT 1" && \
+	echo "Digite a senha do mysql. " && \
+	mysql -u root -p mysql -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '\!@A7v400mx';" && \
+	echo "Digite a senha do mysql. " && \
 	mysql -u root -p mysql -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '\!@A7v400mx';" && \
 	systemctl stop mysql.service && \
 	systemctl start mysql.service;
@@ -90,7 +96,7 @@ configuracao_nginx() {
 	ln -s /usr/share/nginx/html /var/www && \
 	echo ":)" > /usr/share/nginx/html/index.html && \
 	mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.sample && \
-	cd nginx/ && \
+	cd nginx && \
 	mv nginx.conf /etc/nginx/ && \
 	mv fastcgi_params.conf /etc/nginx/ && \
 	mv proxy.conf /etc/nginx/default.d/ && \
@@ -121,8 +127,9 @@ configuracao_php(){
 	mkdir -p /var/lib/php/sessions && \
 	chmod 777 /var/lib/php/sessions && \
 	echo "" > /etc/php-fpm.d/www.conf && \
-	cd php/ && \
-	mv illi.conf /etc/php-fpm.d/ ;
+	cd php && \
+	mv illi.conf /etc/php-fpm.d/ && \
+	cd .. ;
 }
 
 instalacao_git(){
@@ -147,11 +154,12 @@ clonar_repositorio(){
 	git clone https://git.pdv.moda/publico/standalone.git illi && \
 	cd illi && \
 	chmod +x *.sh && \
-	chown -Rf apache:apache . ;
+	chown -Rf apache:apache . && \
+	cd .. ;
 }
 
 habilitar_illi_nginx() {
-	cd illi_nginx/ && \
+	cd illi_nginx && \
 	mv illi.conf /etc/nginx/conf.d/ && \
 	systemctl stop nginx.service && systemctl stop php-fpm.service && systemctl start php-fpm.service && systemctl start nginx.service;
 
@@ -175,7 +183,6 @@ configuracao_database_illi(){
 }
 
 instalacao_illi() {
-
 	cd /var/www/illi && \
 	echo " " && \
 	read -p "Insira a chave de registro do servidor: " licenca && \
